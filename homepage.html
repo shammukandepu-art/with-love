@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Cinema — Us.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Josefin+Sans:wght@100;200;300;400&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           ROOT SYSTEM — VELVET SPECTRUM
+        ============================================ */
+        :root {
+            --obsidian:       #080505;
+            --velvet-abyss:   #120809;
+            --velvet-shadow:  #1C0A0D;
+            --velvet-core:    #7A1520;
+            --velvet-mid:     #9E1B2A;
+            --velvet-catch:   #C4444A;
+            --velvet-blush:   #E8A0A3;
+            --gold-thread:    #B8924A;
+            --gold-pale:      #D4B483;
+            --gold-whisper:   #EDD9B0;
+            --cream:          #F5EDD8;
+            --text-dim:       rgba(245,237,216,0.45);
+            --text-muted:     rgba(245,237,216,0.65);
+            --border-velvet:  rgba(124, 21, 32, 0.25);
+            --border-gold:    rgba(184,146,74,0.2);
+            --glow-velvet:    rgba(156, 27, 42, 0.35);
+            --glow-gold:      rgba(184,146,74,0.25);
+            --transition:     all 0.55s cubic-bezier(0.25, 0.1, 0.25, 1);
+            --transition-slow: all 0.9s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        /* ============================================
+           RESET & BASE
+        ============================================ */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background-color: var(--obsidian);
+            color: var(--cream);
+            font-family: 'Josefin Sans', sans-serif;
+            font-weight: 200;
+            letter-spacing: 0.06em;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* ============================================
+           FILM GRAIN OVERLAY — Fixed, static
+        ============================================ */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23grain)' opacity='0.09'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 99998;
+            opacity: 1;
+            mix-blend-mode: overlay;
+        }
+
+        /* Vignette */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(4,2,2,0.75) 100%);
+            pointer-events: none;
+            z-index: 99997;
+        }
+
+        /* ============================================
+           CUSTOM CURSOR — Cinema Reticle
+        ============================================ */
+        .cursor-dot {
+            width: 5px; height: 5px;
+            background: var(--velvet-catch);
+            border-radius: 50%;
+            position: fixed;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 99999;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, background 0.2s;
+        }
+
+        .cursor-ring {
+            width: 36px; height: 36px;
+            border: 0.5px solid rgba(196, 68, 74, 0.5);
+            border-radius: 50%;
+            position: fixed;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 99999;
+            transform: translate(-50%, -50%);
+            transition: transform 0.12s ease-out, width 0.3s ease, height 0.3s ease, border-color 0.3s ease;
+        }
+
+        .cursor-ring::before,
+        .cursor-ring::after {
+            content: '';
+            position: absolute;
+            background: rgba(196, 68, 74, 0.4);
+        }
+        .cursor-ring::before { width: 1px; height: 8px; top: -10px; left: 50%; transform: translateX(-50%); }
+        .cursor-ring::after  { width: 8px; height: 1px; left: -10px; top: 50%; transform: translateY(-50%); }
+
+        body.cursor-hover .cursor-ring {
+            width: 60px; height: 60px;
+            border-color: rgba(184, 146, 74, 0.7);
+        }
+        body.cursor-hover .cursor-dot {
+            background: var(--gold-thread);
+            width: 3px; height: 3px;
+        }
+
+        /* ============================================
+           ENTRY GATE — Cinematic Curtain
+        ============================================ */
+        .entry-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background: var(--obsidian);
+        }
+
+        /* Curtain panels */
+        .curtain-left,
+        .curtain-right {
+            position: absolute;
+            top: 0;
+            width: 52%;
+            height: 100%;
+            background: linear-gradient(180deg, #1A0509 0%, #0E0305 100%);
+            z-index: 2;
+            transition: transform 1.6s cubic-bezier(0.77, 0, 0.18, 1);
+        }
+        .curtain-left  { left: 0;  transform-origin: left;  }
+        .curtain-right { right: 0; transform-origin: right; }
+
+        /* Curtain fold texture */
+        .curtain-left::before,
+        .curtain-right::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent 0px,
+                transparent 18px,
+                rgba(0,0,0,0.18) 18px,
+                rgba(0,0,0,0.18) 20px,
+                transparent 20px,
+                transparent 38px,
+                rgba(255,255,255,0.02) 38px,
+                rgba(255,255,255,0.02) 40px
+            );
+        }
+
+        .curtain-left::after,
+        .curtain-right::after {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0; width: 3px;
+            background: linear-gradient(180deg,
+                transparent,
+                rgba(158,27,42,0.4) 30%,
+                rgba(158,27,42,0.6) 50%,
+                rgba(158,27,42,0.4) 70%,
+                transparent
+            );
+        }
+        .curtain-left::after  { right: 0; }
+        .curtain-right::after { left: 0; }
+
+        .curtain-open .curtain-left  { transform: translateX(-98%); }
+        .curtain-open .curtain-right { transform: translateX(98%);  }
+
+        /* Film sprocket holes — top & bottom */
+        .sprocket-strip {
+            position: absolute;
+            left: 0; right: 0;
+            height: 28px;
+            background: #050202;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 0 8px;
+            overflow: hidden;
+        }
+        .sprocket-strip.top    { top: 0; }
+        .sprocket-strip.bottom { bottom: 0; }
+
+        .sprocket-hole {
+            width: 12px; height: 9px;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 2px;
+            flex-shrink: 0;
+            background: var(--obsidian);
+        }
+
+        .entry-center {
+            position: relative;
+            z-index: 4;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .entry-eyebrow {
+            font-size: 9px;
+            font-weight: 300;
+            letter-spacing: 0.55em;
+            color: var(--gold-thread);
+            opacity: 0.7;
+            animation: fadeInUp 0.8s 0.3s both;
+        }
+
+        .entry-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 300;
+            line-height: 1.25;
+            letter-spacing: 0.02em;
+            animation: fadeInUp 0.8s 0.5s both;
+        }
+        .entry-title em {
+            font-style: italic;
+            color: var(--velvet-catch);
+            display: block;
+            font-size: 1.15em;
+        }
+
+        .entry-rule {
+            width: 60px;
+            height: 0.5px;
+            background: linear-gradient(90deg, transparent, var(--gold-thread), transparent);
+            animation: fadeInUp 0.8s 0.7s both;
+        }
+
+        .enter-btn {
+            background: transparent;
+            border: 0.5px solid rgba(184,146,74,0.4);
+            color: var(--cream);
+            padding: 0.9rem 3rem;
+            font-family: 'Josefin Sans', sans-serif;
+            font-size: 9px;
+            font-weight: 300;
+            letter-spacing: 0.55em;
+            text-transform: uppercase;
+            cursor: none;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.8s 0.9s both;
+        }
+
+        .enter-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(184,146,74,0.06), rgba(158,27,42,0.08));
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .enter-btn:hover::before { opacity: 1; }
+        .enter-btn:hover { border-color: rgba(184,146,74,0.7); }
+
+        /* ============================================
+           CUSTOM SCROLLBAR
+        ============================================ */
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: var(--velvet-abyss); }
+        ::-webkit-scrollbar-thumb { background: var(--velvet-core); border-radius: 2px; }
+
+        /* ============================================
+           NAVBAR
+        ============================================ */
+        .navbar {
+            position: fixed;
+            top: 0; width: 100%;
+            padding: 1.8rem 4rem;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, rgba(8,5,5,0.9) 0%, transparent 100%);
+            backdrop-filter: blur(0px);
+        }
+
+        .logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.4rem;
+            font-weight: 300;
+            font-style: italic;
+            color: var(--cream);
+            letter-spacing: 0.1em;
+            opacity: 0.9;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 2.5rem;
+        }
+
+        .nav-link {
+            font-size: 8px;
+            font-weight: 300;
+            letter-spacing: 0.45em;
+            color: var(--text-muted);
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: color 0.3s;
+            cursor: none;
+        }
+        .nav-link:hover { color: var(--gold-pale); }
+
+        .nav-profile {
+            width: 32px; height: 32px;
+            border: 0.5px solid var(--border-gold);
+            overflow: hidden;
+            cursor: none;
+        }
+        .nav-profile img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(20%); }
+
+        /* ============================================
+           HERO
+        ============================================ */
+        .hero {
+            height: 92vh;
+            width: 100%;
+            position: relative;
+            background: url('background.jpg') center/cover no-repeat;
+            display: flex;
+            align-items: flex-end;
+            padding: 5rem 5rem;
+            overflow: hidden;
+        }
+
+        /* Multi-layer gradient */
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(to top, rgba(8,5,5,1) 0%, rgba(8,5,5,0.5) 25%, transparent 55%),
+                linear-gradient(to right, rgba(8,5,5,0.7) 0%, transparent 50%);
+        }
+
+        /* Horizontal scan line */
+        .hero::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(158,27,42,0.3), transparent);
+            top: 50%;
+            animation: scanLine 8s ease-in-out infinite;
+        }
+
+        @keyframes scanLine {
+            0%, 100% { top: 20%; opacity: 0; }
+            50% { top: 80%; opacity: 1; }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            max-width: 580px;
+        }
+
+        .hero-eyebrow {
+            font-size: 8px;
+            font-weight: 300;
+            letter-spacing: 0.6em;
+            color: var(--gold-thread);
+            opacity: 0.8;
+            margin-bottom: 1rem;
+        }
+
+        .hero-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(3rem, 6vw, 5rem);
+            font-weight: 300;
+            font-style: italic;
+            letter-spacing: 0.02em;
+            line-height: 1.1;
+            margin-bottom: 0.5rem;
+            color: var(--cream);
+        }
+
+        .hero-subtitle {
+            font-size: 9px;
+            font-weight: 200;
+            letter-spacing: 0.45em;
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+        }
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .play-btn {
+            background: transparent;
+            border: 0.5px solid rgba(245,237,216,0.3);
+            color: var(--cream);
+            padding: 0.85rem 2.2rem;
+            font-family: 'Josefin Sans', sans-serif;
+            font-size: 9px;
+            font-weight: 300;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            cursor: none;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .play-btn::before {
+            content: '';
+            position: absolute;
+            left: -100%;
+            top: 0; bottom: 0;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, rgba(158,27,42,0.15), transparent);
+            transition: left 0.6s ease;
+        }
+        .play-btn:hover::before { left: 100%; }
+        .play-btn:hover {
+            border-color: rgba(196,68,74,0.6);
+            box-shadow: 0 0 30px rgba(156,27,42,0.15), inset 0 0 20px rgba(156,27,42,0.05);
+        }
+
+        .play-icon {
+            display: inline-block;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 4px 0 4px 7px;
+            border-color: transparent transparent transparent var(--velvet-catch);
+            margin-right: 0.8rem;
+            vertical-align: middle;
+        }
+
+        .hero-runtime {
+            font-size: 8px;
+            font-weight: 200;
+            letter-spacing: 0.3em;
+            color: var(--text-dim);
+        }
+
+        /* Hero metadata strip */
+        .hero-meta {
+            position: absolute;
+            bottom: 4rem;
+            right: 4rem;
+            text-align: right;
+            z-index: 10;
+        }
+        .hero-meta-item {
+            font-size: 7px;
+            font-weight: 200;
+            letter-spacing: 0.45em;
+            color: var(--text-dim);
+            margin-bottom: 0.4rem;
+            text-transform: uppercase;
+        }
+        .hero-meta-item span {
+            color: var(--text-muted);
+            display: block;
+            font-weight: 300;
+        }
+
+        /* ============================================
+           SECTION SYSTEM
+        ============================================ */
+        .section {
+            padding: 4rem 5rem;
+            position: relative;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 2.5rem;
+        }
+
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .section-num {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 0.7rem;
+            font-weight: 300;
+            font-style: italic;
+            color: var(--velvet-core);
+            opacity: 0.7;
+        }
+
+        .section-title {
+            font-size: 8px;
+            font-weight: 300;
+            letter-spacing: 0.55em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .section-rule {
+            flex: 1;
+            height: 0.5px;
+            background: linear-gradient(90deg, var(--border-velvet), transparent);
+            margin-left: 2rem;
+        }
+
+        /* ============================================
+           DIRECTOR'S CUT CARDS
+        ============================================ */
+        .cards-wrapper {
+            display: flex;
+            gap: 1.2rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            cursor: none;
+        }
+        .cards-wrapper::-webkit-scrollbar { display: none; }
+
+        .card-tall {
+            min-width: 195px;
+            height: 340px;
+            overflow: hidden;
+            background: var(--velvet-shadow);
+            cursor: none;
+            transition: var(--transition);
+            position: relative;
+            border: 0.5px solid rgba(255,255,255,0.04);
+            flex-shrink: 0;
+        }
+
+        .card-tall video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(60%) brightness(0.55) sepia(10%);
+            transition: filter 0.7s ease, transform 0.7s ease;
+            transform: scale(1.03);
+        }
+
+        .card-tall:hover video {
+            filter: grayscale(0%) brightness(0.85) sepia(5%);
+            transform: scale(1);
+        }
+
+        /* Card overlay — title label */
+        .card-label {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 1.5rem 1rem 0.8rem;
+            background: linear-gradient(to top, rgba(8,5,5,0.9), transparent);
+            z-index: 2;
+            transform: translateY(8px);
+            opacity: 0;
+            transition: var(--transition);
+        }
+        .card-tall:hover .card-label { opacity: 1; transform: translateY(0); }
+
+        .card-label-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 0.9rem;
+            font-weight: 300;
+            font-style: italic;
+            color: var(--cream);
+        }
+
+        /* Card corner bracket */
+        .card-bracket {
+            position: absolute;
+            top: 10px; left: 10px;
+            width: 16px; height: 16px;
+            border-top: 0.5px solid rgba(184,146,74,0.3);
+            border-left: 0.5px solid rgba(184,146,74,0.3);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .card-tall:hover .card-bracket { opacity: 1; }
+
+        /* ============================================
+           FRAGMENTS TRIGGER — Luxury Redesign
+        ============================================ */
+        .fragments-section {
+            padding: 3rem 5rem 5rem;
+        }
+
+        .fragments-stage {
+            position: relative;
+            max-width: 820px;
+            margin: 0 auto;
+            cursor: none;
+        }
+
+        /* Ambient glow behind */
+        .fragments-stage::before {
+            content: '';
+            position: absolute;
+            inset: -40px;
+            background: radial-gradient(ellipse at center, rgba(156,27,42,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .fragments-trigger {
+            position: relative;
+            width: 100%;
+            height: 320px;
+            border: 0.5px solid var(--border-velvet);
+            background: var(--velvet-abyss);
+            overflow: hidden;
+            cursor: none;
+            transition: border-color 0.6s ease;
+        }
+
+        .fragments-trigger:hover { border-color: rgba(124,21,32,0.5); }
+
+        /* Film strip top & bottom */
+        .ft-strip {
+            position: absolute;
+            left: 0; right: 0;
+            height: 22px;
+            background: #030101;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 6px;
+        }
+        .ft-strip.top    { top: 0; }
+        .ft-strip.bottom { bottom: 0; }
+        .ft-hole {
+            width: 10px; height: 7px;
+            border: 0.5px solid rgba(255,255,255,0.08);
+            border-radius: 1px;
+            background: var(--obsidian);
+            flex-shrink: 0;
+        }
+
+        /* Floating frames preview */
+        .ft-frame {
+            position: absolute;
+            border: 0.5px solid rgba(158,27,42,0.3);
+            overflow: hidden;
+            transition: var(--transition-slow);
+            background: var(--velvet-shadow);
+        }
+        .ft-frame img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: grayscale(80%) brightness(0.5) sepia(15%);
+            transition: filter 0.8s ease;
+        }
+        .fragments-trigger:hover .ft-frame img {
+            filter: grayscale(30%) brightness(0.7) sepia(10%);
+        }
+
+        .ft-frame-1 { width: 110px; height: 150px; left: 6%; top: 18%; transform: rotate(-3deg); }
+        .ft-frame-2 { width: 85px; height: 115px; left: 20%; top: 28%; transform: rotate(1.5deg); }
+        .ft-frame-3 { width: 130px; height: 165px; right: 5%; top: 15%; transform: rotate(2.5deg); }
+        .ft-frame-4 { width: 90px; height: 120px; right: 21%; top: 30%; transform: rotate(-1deg); }
+
+        .fragments-trigger:hover .ft-frame-1 { transform: rotate(-5deg) translate(-5px, -8px); }
+        .fragments-trigger:hover .ft-frame-2 { transform: rotate(3deg) translate(3px, -5px); }
+        .fragments-trigger:hover .ft-frame-3 { transform: rotate(4deg) translate(5px, -8px); }
+        .fragments-trigger:hover .ft-frame-4 { transform: rotate(-2deg) translate(-3px, -5px); }
+
+        /* Center CTA */
+        .ft-cta {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            gap: 1rem;
+        }
+
+        .ft-eyebrow {
+            font-size: 7px;
+            font-weight: 300;
+            letter-spacing: 0.65em;
+            color: var(--gold-thread);
+            opacity: 0.7;
+        }
+
+        .ft-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 300;
+            font-style: italic;
+            color: var(--cream);
+            letter-spacing: 0.05em;
+            text-align: center;
+        }
+
+        .ft-rule {
+            width: 40px;
+            height: 0.5px;
+            background: var(--gold-thread);
+            opacity: 0.5;
+        }
+
+        .ft-sub {
+            font-size: 8px;
+            font-weight: 200;
+            letter-spacing: 0.45em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        /* Animated glow ring on hover */
+        .ft-ring {
+            position: absolute;
+            width: 120px; height: 120px;
+            border: 0.5px solid rgba(156,27,42,0);
+            border-radius: 50%;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.8s ease;
+            z-index: 4;
+        }
+        .fragments-trigger:hover .ft-ring {
+            width: 200px; height: 200px;
+            border-color: rgba(156,27,42,0.25);
+            box-shadow: 0 0 60px rgba(156,27,42,0.1);
+        }
+
+        /* ============================================
+           HIDDEN LETTER — Secret section
+        ============================================ */
+        .letter-section {
+            padding: 6rem 5rem;
+            position: relative;
+        }
+
+        .letter-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 5rem; right: 5rem;
+            height: 0.5px;
+            background: linear-gradient(90deg, transparent, var(--border-gold), transparent);
+        }
+
+        .letter-container {
+            max-width: 580px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .letter-seal {
+            width: 48px; height: 48px;
+            border: 0.5px solid var(--border-gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 2rem;
+            position: relative;
+        }
+        .letter-seal::before {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border: 0.5px solid rgba(184,146,74,0.15);
+            border-radius: 50%;
+        }
+        .letter-seal-inner {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.1rem;
+            font-style: italic;
+            color: var(--gold-thread);
+            opacity: 0.8;
+        }
+
+        .letter-toggle {
+            font-size: 8px;
+            font-weight: 300;
+            letter-spacing: 0.55em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            background: none;
+            border: none;
+            cursor: none;
+            transition: color 0.3s;
+            margin-bottom: 0.5rem;
+            display: block;
+            width: 100%;
+            text-align: center;
+        }
+        .letter-toggle:hover { color: var(--gold-pale); }
+
+        .letter-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 1.2s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.8s ease;
+            opacity: 0;
+        }
+        .letter-body.open {
+            max-height: 600px;
+            opacity: 1;
+        }
+
+        .letter-body p {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(1rem, 1.8vw, 1.25rem);
+            font-weight: 300;
+            font-style: italic;
+            line-height: 1.9;
+            color: var(--cream);
+            opacity: 0.85;
+            margin-bottom: 1.2rem;
+            text-align: center;
+        }
+
+        .letter-signature {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.4rem;
+            font-weight: 300;
+            font-style: italic;
+            color: var(--velvet-blush);
+            opacity: 0.7;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 0.5px solid var(--border-gold);
+        }
+
+        /* ============================================
+           CREDITS ROLL
+        ============================================ */
+        .credits-section {
+            padding: 5rem 5rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .credits-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 5rem; right: 5rem;
+            height: 0.5px;
+            background: linear-gradient(90deg, transparent, var(--border-velvet), transparent);
+        }
+
+        .credits-inner {
+            max-width: 480px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .credits-eyebrow {
+            font-size: 7px;
+            font-weight: 300;
+            letter-spacing: 0.65em;
+            color: var(--gold-thread);
+            opacity: 0.5;
+            margin-bottom: 3rem;
+        }
+
+        .credit-block {
+            margin-bottom: 2.2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .credit-block.visible { opacity: 1; transform: translateY(0); }
+
+        .credit-role {
+            font-size: 7px;
+            font-weight: 200;
+            letter-spacing: 0.55em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+
+        .credit-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.4rem;
+            font-weight: 300;
+            font-style: italic;
+            color: var(--cream);
+            opacity: 0.9;
+        }
+
+        /* ============================================
+           COMING SOON — Final Frame
+        ============================================ */
+        .coming-soon-section {
+            padding: 4rem 5rem 6rem;
+            text-align: center;
+        }
+
+        .cs-frame {
+            border: 0.5px solid var(--border-velvet);
+            padding: 4rem 3rem;
+            max-width: 640px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .cs-frame::before,
+        .cs-frame::after {
+            content: '';
+            position: absolute;
+            width: 20px; height: 20px;
+        }
+        .cs-frame::before {
+            top: -1px; right: -1px;
+            border-top: 0.5px solid var(--gold-thread);
+            border-right: 0.5px solid var(--gold-thread);
+        }
+        .cs-frame::after {
+            bottom: -1px; left: -1px;
+            border-bottom: 0.5px solid var(--gold-thread);
+            border-left: 0.5px solid var(--gold-thread);
+        }
+
+        .cs-eyebrow {
+            font-size: 7px;
+            font-weight: 200;
+            letter-spacing: 0.65em;
+            color: var(--gold-thread);
+            opacity: 0.6;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+        }
+
+        .cs-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+            font-weight: 300;
+            font-style: italic;
+            color: var(--cream);
+            margin-bottom: 1.2rem;
+            line-height: 1.2;
+        }
+
+        .cs-body {
+            font-size: 10px;
+            font-weight: 200;
+            letter-spacing: 0.15em;
+            color: var(--text-dim);
+            line-height: 2;
+            max-width: 360px;
+            margin: 0 auto 2.5rem;
+        }
+
+        .cs-rule {
+            width: 30px;
+            height: 0.5px;
+            background: var(--gold-thread);
+            margin: 0 auto 2rem;
+            opacity: 0.4;
+        }
+
+        /* Date counter */
+        .cs-date {
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+        }
+        .cs-date-unit { text-align: center; }
+        .cs-date-num {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            font-weight: 300;
+            color: var(--cream);
+            display: block;
+            line-height: 1;
+        }
+        .cs-date-label {
+            font-size: 7px;
+            font-weight: 200;
+            letter-spacing: 0.4em;
+            color: var(--text-dim);
+            margin-top: 0.4rem;
+        }
+
+        /* ============================================
+           THEATER MODAL
+        ============================================ */
+        .theater-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(4,2,2,0.98);
+            z-index: 9000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            cursor: none;
+        }
+        .theater-modal.open {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Curtain reveal animation for modal */
+        .theater-curtain-left,
+        .theater-curtain-right {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 50%;
+            background: var(--velvet-shadow);
+            z-index: 2;
+            transition: transform 0.8s cubic-bezier(0.77, 0, 0.18, 1) 0.2s;
+        }
+        .theater-curtain-left  { left: 0; transform: translateX(0); }
+        .theater-curtain-right { right: 0; transform: translateX(0); }
+
+        .theater-modal.revealed .theater-curtain-left  { transform: translateX(-100%); }
+        .theater-modal.revealed .theater-curtain-right { transform: translateX(100%); }
+
+        .video-container {
+            position: relative;
+            z-index: 5;
+            height: 85vh;
+            aspect-ratio: 9/16;
+            border: 0.5px solid rgba(158,27,42,0.3);
+        }
+        .video-container video { width: 100%; height: 100%; object-fit: cover; }
+
+        .close-theater {
+            position: absolute;
+            top: 2rem; right: 2rem;
+            font-family: 'Josefin Sans', sans-serif;
+            font-size: 8px;
+            font-weight: 300;
+            letter-spacing: 0.45em;
+            color: var(--text-muted);
+            background: none;
+            border: none;
+            cursor: none;
+            z-index: 10;
+            transition: color 0.3s;
+        }
+        .close-theater:hover { color: var(--cream); }
+
+        /* ============================================
+           SLIDESHOW OVERLAY
+        ============================================ */
+        #slideshowOverlay {
+            position: fixed;
+            inset: 0;
+            background: var(--obsidian);
+            z-index: 8000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 1s ease;
+            cursor: none;
+        }
+        #slideshowOverlay.open { display: flex; }
+        #slideshowOverlay.visible { opacity: 1; }
+
+        /* Aperture open animation */
+        .aperture {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 0.8s ease 0.5s;
+        }
+        .aperture.done { opacity: 0; }
+
+        .aperture-blade {
+            position: absolute;
+            width: 200px; height: 200px;
+            border: 0.5px solid rgba(158,27,42,0.5);
+            border-radius: 50%;
+            transition: all 0.8s cubic-bezier(0.77, 0, 0.18, 1);
+        }
+        .aperture-blade:nth-child(1) { width: 20px; height: 20px; }
+        .aperture-blade:nth-child(2) { width: 20px; height: 20px; border-color: rgba(184,146,74,0.3); }
+
+        .aperture.opening .aperture-blade:nth-child(1) { width: 100vmax; height: 100vmax; opacity: 0; }
+        .aperture.opening .aperture-blade:nth-child(2) { width: 80vmax; height: 80vmax; opacity: 0; }
+
+        .slide-container {
+            position: relative;
+            z-index: 2;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        /* Slide counter */
+        .slide-counter {
+            position: absolute;
+            top: 2rem; left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            font-weight: 200;
+            letter-spacing: 0.45em;
+            color: var(--text-dim);
+            z-index: 10;
+        }
+
+        #slideMedia {
+            max-height: 72vh;
+            max-width: 80vw;
+            position: relative;
+        }
+
+        #slideMedia img,
+        #slideMedia video {
+            max-height: 72vh;
+            max-width: 80vw;
+            object-fit: contain;
+            display: block;
+            border: 0.5px solid rgba(255,255,255,0.04);
+            transition: opacity 0.5s ease;
+        }
+
+        #slideText {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            font-weight: 300;
+            color: var(--cream);
+            opacity: 0.8;
+            text-align: center;
+            max-width: 500px;
+            padding: 0 2rem;
+            line-height: 1.6;
+            letter-spacing: 0.02em;
+            transition: opacity 0.5s ease;
+        }
+
+        .slide-control {
+            position: absolute;
+            top: 50%; transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            font-weight: 300;
+            color: var(--text-dim);
+            cursor: none;
+            z-index: 10;
+            transition: color 0.3s, opacity 0.3s;
+            opacity: 0;
+            padding: 1rem;
+        }
+        .prev-btn { left: 2rem; }
+        .next-btn { right: 2rem; }
+
+        #slideshowOverlay:hover .slide-control { opacity: 1; }
+        .slide-control:hover { color: var(--cream); }
+
+        .close-slideshow {
+            position: absolute;
+            top: 2rem; right: 3rem;
+            font-size: 8px;
+            font-weight: 300;
+            letter-spacing: 0.45em;
+            color: var(--text-dim);
+            cursor: none;
+            z-index: 10;
+            background: none;
+            border: none;
+            opacity: 0;
+            transition: opacity 0.3s, color 0.3s;
+        }
+        #slideshowOverlay:hover .close-slideshow { opacity: 1; }
+        .close-slideshow:hover { color: var(--cream); }
+
+        /* Progress bar */
+        .slide-progress {
+            position: absolute;
+            bottom: 2.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        #slideshowOverlay:hover .slide-progress { opacity: 1; }
+
+        .progress-dot {
+            width: 18px; height: 1px;
+            background: rgba(245,237,216,0.15);
+            transition: background 0.3s;
+        }
+        .progress-dot.active { background: var(--velvet-catch); }
+
+        /* ============================================
+           HEARTS — Refined
+        ============================================ */
+        @keyframes floatHeart {
+            0%   { transform: translateY(100vh) scale(0) rotate(0deg); opacity: 0; }
+            15%  { opacity: 0.12; }
+            85%  { opacity: 0.08; }
+            100% { transform: translateY(-10vh) scale(0.8) rotate(8deg); opacity: 0; }
+        }
+
+        .heart {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1;
+            animation: floatHeart linear forwards;
+            color: transparent;
+            font-size: 10px;
+        }
+
+        /* SVG heart instead of emoji */
+        .heart svg {
+            fill: none;
+            stroke: var(--velvet-core);
+            stroke-width: 0.8px;
+            width: 12px; height: 12px;
+            opacity: 0.4;
+        }
+
+        /* ============================================
+           PARALLAX HERO
+        ============================================ */
+        .hero-bg-parallax {
+            position: absolute;
+            inset: -10%;
+            background: url('background.jpg') center/cover no-repeat;
+            will-change: transform;
+        }
+
+        /* ============================================
+           FOOTER
+        ============================================ */
+        .site-footer {
+            padding: 2rem 5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 0.5px solid rgba(255,255,255,0.03);
+        }
+
+        .footer-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 0.9rem;
+            font-style: italic;
+            color: var(--text-dim);
+        }
+
+        .footer-copy {
+            font-size: 7px;
+            font-weight: 200;
+            letter-spacing: 0.4em;
+            color: var(--text-dim);
+            opacity: 0.5;
+        }
+
+        /* ============================================
+           SCROLL ANIMATIONS
+        ============================================ */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.9s ease, transform 0.9s ease;
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        /* ============================================
+           UTILITY ANIMATIONS
+        ============================================ */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulseGold {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+        }
+
+        /* Slide transition */
+        .slide-fade-out { opacity: 0 !important; }
+
+        /* Typewriter cursor */
+        .cursor-blink {
+            animation: blink 1.2s step-end infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* ============================================
+           RESPONSIVE
+        ============================================ */
+        @media (max-width: 768px) {
+            .navbar  { padding: 1.2rem 1.5rem; }
+            .section { padding: 3rem 1.5rem; }
+            .hero    { padding: 3rem 1.5rem; }
+            .fragments-section { padding: 2rem 1.5rem 3rem; }
+            .letter-section    { padding: 4rem 1.5rem; }
+            .credits-section   { padding: 4rem 1.5rem 2rem; }
+            .coming-soon-section { padding: 3rem 1.5rem 4rem; }
+            .site-footer { padding: 2rem 1.5rem; }
+            .hero-meta { display: none; }
+            .nav-link { display: none; }
+            .ft-frame-2, .ft-frame-4 { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CUSTOM CURSOR -->
+    <div class="cursor-dot" id="cursorDot"></div>
+    <div class="cursor-ring" id="cursorRing"></div>
+
+    <!-- AUDIO -->
+    <audio id="home-audio" loop><source src="home-music.mp3" type="audio/mpeg"></audio>
+
+    <!-- ======= ENTRY GATE ======= -->
+    <div class="entry-overlay" id="entryOverlay">
+        <!-- Film sprocket strips -->
+        <div class="sprocket-strip top" id="sprocketTop"></div>
+        <div class="sprocket-strip bottom" id="sprocketBottom"></div>
+
+        <!-- Curtains -->
+        <div class="curtain-left"  id="curtainLeft"></div>
+        <div class="curtain-right" id="curtainRight"></div>
+
+        <!-- Center content -->
+        <div class="entry-center">
+            <div class="entry-eyebrow">A Private Screening</div>
+            <h1 class="entry-title">
+                To our memories,<br>
+                <em>with love.</em>
+            </h1>
+            <div class="entry-rule"></div>
+            <button class="enter-btn" onclick="enterCinema()" id="enterBtn">
+                Enter Cinema
+            </button>
+        </div>
+    </div>
+
+    <!-- ======= THEATER MODAL ======= -->
+    <div class="theater-modal" id="theaterModal">
+        <div class="theater-curtain-left"></div>
+        <div class="theater-curtain-right"></div>
+        <button class="close-theater" onclick="closeMovie()">Close  ×</button>
+        <div class="video-container">
+            <video id="mainMovie" src="" controls playsinline></video>
+        </div>
+    </div>
+
+    <!-- ======= SLIDESHOW OVERLAY ======= -->
+    <div id="slideshowOverlay">
+        <!-- Aperture animation -->
+        <div class="aperture" id="aperture">
+            <div class="aperture-blade"></div>
+            <div class="aperture-blade"></div>
+        </div>
+
+        <button class="close-slideshow" onclick="closeSlideshow()">Close  ×</button>
+        <button class="slide-control prev-btn" onclick="changeSlide(-1)">‹</button>
+        <button class="slide-control next-btn" onclick="changeSlide(1)">›</button>
+
+        <div class="slide-counter" id="slideCounter">01 / 46</div>
+
+        <div class="slide-container">
+            <div id="slideMedia"></div>
+            <div id="slideText"></div>
+        </div>
+
+        <div class="slide-progress" id="slideProgress"></div>
+    </div>
+
+    <!-- ======= NAVBAR ======= -->
+    <nav class="navbar">
+        <div class="logo">Us.</div>
+        <div class="nav-right">
+            <a href="#fragments"  class="nav-link">Fragments</a>
+            <a href="#letter"     class="nav-link">Letter</a>
+            <a href="#coming-soon" class="nav-link">Next Chapter</a>
+            <div class="nav-profile">
+                <img src="us.jpg" alt="Us">
+            </div>
+        </div>
+    </nav>
+
+    <!-- ======= HERO ======= -->
+    <header class="hero" id="hero">
+        <div class="hero-bg-parallax" id="heroBg"></div>
+        <div class="hero-content reveal">
+            <div class="hero-eyebrow">Feature Presentation</div>
+            <h1 class="hero-title">I Found Her</h1>
+            <div class="hero-subtitle">A Love Story — In Continuous Exhibition</div>
+            <div class="hero-actions">
+                <button class="play-btn" onclick="playMovie('hero.mp4')">
+                    <span class="play-icon"></span>Play Full Story
+                </button>
+                <span class="hero-runtime">Runtime: Forever</span>
+            </div>
+        </div>
+        <div class="hero-meta">
+            <div class="hero-meta-item">Director<span>You</span></div>
+            <div class="hero-meta-item">Starring<span>Her</span></div>
+            <div class="hero-meta-item">Genre<span>Romance</span></div>
+        </div>
+    </header>
+
+    <!-- ======= DIRECTOR'S CUTS ======= -->
+    <section class="section reveal" id="directors-cuts">
+        <div class="section-header">
+            <div class="section-label">
+                <span class="section-num">I.</span>
+                <span class="section-title">Director's Cuts</span>
+            </div>
+            <div class="section-rule"></div>
+        </div>
+        <div class="cards-wrapper">
+            <div class="card-tall"
+                onmouseenter="this.querySelector('video').play()"
+                onmouseleave="v=this.querySelector('video');v.pause();v.currentTime=0"
+                onclick="playMovie('hug.mp4')">
+                <video src="hug.mp4" muted loop playsinline></video>
+                <div class="card-bracket"></div>
+                <div class="card-label"><div class="card-label-text">The Embrace</div></div>
+            </div>
+            <div class="card-tall"
+                onmouseenter="this.querySelector('video').play()"
+                onmouseleave="v=this.querySelector('video');v.pause();v.currentTime=0"
+                onclick="playMovie('bear.mp4')">
+                <video src="bear.mp4" muted loop playsinline></video>
+                <div class="card-bracket"></div>
+                <div class="card-label"><div class="card-label-text">The Warmth</div></div>
+            </div>
+            <div class="card-tall"
+                onmouseenter="this.querySelector('video').play()"
+                onmouseleave="v=this.querySelector('video');v.pause();v.currentTime=0"
+                onclick="playMovie('bw.mp4')">
+                <video src="bw.mp4" muted loop playsinline></video>
+                <div class="card-bracket"></div>
+                <div class="card-label"><div class="card-label-text">In Black & White</div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= FRAGMENTS TRIGGER ======= -->
+    <section class="fragments-section reveal" id="fragments">
+        <div class="section-header">
+            <div class="section-label">
+                <span class="section-num">II.</span>
+                <span class="section-title">Fragments</span>
+            </div>
+            <div class="section-rule"></div>
+        </div>
+
+        <div class="fragments-stage">
+            <div class="fragments-trigger" onclick="openSlideshow()" id="fragmentsTrigger">
+                <!-- Film strip top -->
+                <div class="ft-strip top" id="ftStripTop"></div>
+                <div class="ft-strip bottom" id="ftStripBottom"></div>
+
+                <!-- Scattered frame previews -->
+                <div class="ft-frame ft-frame-1"><img src="tall (1).jpg" alt=""></div>
+                <div class="ft-frame ft-frame-2"><img src="tall (14).jpg" alt=""></div>
+                <div class="ft-frame ft-frame-3"><img src="tall (35).jpg" alt=""></div>
+                <div class="ft-frame ft-frame-4"><img src="tall (44).jpg" alt=""></div>
+
+                <!-- Hover ring -->
+                <div class="ft-ring"></div>
+
+                <!-- CTA center -->
+                <div class="ft-cta">
+                    <div class="ft-eyebrow">46 Memories</div>
+                    <div class="ft-title">Our Story,<br>in Fragments</div>
+                    <div class="ft-rule"></div>
+                    <div class="ft-sub">Step inside</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= HIDDEN LETTER ======= -->
+    <section class="letter-section reveal" id="letter">
+        <div class="letter-container">
+            <div class="letter-seal">
+                <span class="letter-seal-inner">♡</span>
+            </div>
+            <button class="letter-toggle" onclick="toggleLetter()" id="letterToggle">
+                — A Letter For You —
+            </button>
+            <div class="letter-body" id="letterBody">
+                <p>There are a thousand versions of how this story could have begun,<br>
+                and in every one of them, I find my way back to you.</p>
+
+                <p>You are not just someone I love.<br>
+                You are the thing I didn't know I was looking for —<br>
+                the quiet at the end of every long day,<br>
+                the reason the world feels a little more possible.</p>
+
+                <p>Every frame on this page is a moment I want to keep forever.<br>
+                Every word is something I meant to say<br>
+                but never found the right time for.</p>
+
+                <p>So here it is. Quietly. In a private cinema<br>
+                that only you were invited to.</p>
+
+                <div class="letter-signature">— Always, Me.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= CREDITS ROLL ======= -->
+    <section class="credits-section" id="credits">
+        <div class="credits-inner">
+            <div class="credits-eyebrow">— End Credits —</div>
+
+            <div class="credit-block" data-delay="0">
+                <div class="credit-role">A Film By</div>
+                <div class="credit-name">Someone Who Loves You</div>
+            </div>
+            <div class="credit-block" data-delay="150">
+                <div class="credit-role">Starring</div>
+                <div class="credit-name">The Most Beautiful Person</div>
+            </div>
+            <div class="credit-block" data-delay="300">
+                <div class="credit-role">Produced With</div>
+                <div class="credit-name">Two Years of Memories</div>
+            </div>
+            <div class="credit-block" data-delay="450">
+                <div class="credit-role">Soundtrack</div>
+                <div class="credit-name">Every Song That Reminded Me of You</div>
+            </div>
+            <div class="credit-block" data-delay="600">
+                <div class="credit-role">Location</div>
+                <div class="credit-name">Everywhere We've Been Together</div>
+            </div>
+            <div class="credit-block" data-delay="750">
+                <div class="credit-role">Dedicated To</div>
+                <div class="credit-name" style="color: var(--velvet-blush);">You. Always You.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= COMING SOON ======= -->
+    <section class="coming-soon-section reveal" id="coming-soon">
+        <div class="cs-frame">
+            <div class="cs-eyebrow">Next Feature Presentation</div>
+            <h2 class="cs-title">The Best of What's<br>Still to Come</h2>
+            <div class="cs-rule"></div>
+            <p class="cs-body">Every great love story has a sequel. Ours is still being written — one day, one moment, one memory at a time.</p>
+            <div class="cs-date" id="csDate">
+                <div class="cs-date-unit">
+                    <span class="cs-date-num" id="csDays">—</span>
+                    <div class="cs-date-label">Days Together</div>
+                </div>
+                <div class="cs-date-unit">
+                    <span class="cs-date-num" id="csHours">—</span>
+                    <div class="cs-date-label">Hours of Smiles</div>
+                </div>
+                <div class="cs-date-unit">
+                    <span class="cs-date-num" id="csMins">—</span>
+                    <div class="cs-date-label">More to Go</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======= FOOTER ======= -->
+    <footer class="site-footer">
+        <div class="footer-logo">Us.</div>
+        <div class="footer-copy">A Private Screening · For Your Eyes Only</div>
+    </footer>
+
+    <!-- ======= JAVASCRIPT ======= -->
+    <script>
+    /* ============================================
+       CURSOR
+    ============================================ */
+    const dot  = document.getElementById('cursorDot');
+    const ring = document.getElementById('cursorRing');
+    let mouseX = 0, mouseY = 0, ringX = 0, ringY = 0;
+
+    document.addEventListener('mousemove', e => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        dot.style.left = mouseX + 'px';
+        dot.style.top  = mouseY + 'px';
+    });
+
+    function animateRing() {
+        ringX += (mouseX - ringX) * 0.12;
+        ringY += (mouseY - ringY) * 0.12;
+        ring.style.left = ringX + 'px';
+        ring.style.top  = ringY + 'px';
+        requestAnimationFrame(animateRing);
+    }
+    animateRing();
+
+    document.querySelectorAll('button, a, .card-tall, .fragments-trigger, .nav-profile').forEach(el => {
+        el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+        el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+    });
+
+    /* ============================================
+       SPROCKET HOLES GENERATOR
+    ============================================ */
+    function fillSprockets(el) {
+        for (let i = 0; i < 60; i++) {
+            const h = document.createElement('div');
+            h.className = 'sprocket-hole';
+            el.appendChild(h);
+        }
+    }
+    ['sprocketTop','sprocketBottom','ftStripTop','ftStripBottom'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) fillSprockets(el);
+    });
+    document.querySelectorAll('.ft-strip').forEach(el => fillSprockets(el));
+
+    /* ============================================
+       ENTRY GATE
+    ============================================ */
+    const bgAudio  = document.getElementById('home-audio');
+    const overlay  = document.getElementById('entryOverlay');
+
+    function enterCinema() {
+        // Open curtains
+        overlay.classList.add('curtain-open');
+
+        // Start audio
+        bgAudio.volume = 0;
+        bgAudio.play().catch(() => {});
+        fadeAudio(bgAudio, 0, 0.28, 2000);
+
+        // Fade overlay after curtains open
+        setTimeout(() => {
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+        }, 1200);
+        setTimeout(() => overlay.style.display = 'none', 2400);
+    }
+
+    function fadeAudio(audio, from, to, duration) {
+        const steps = 40;
+        const step  = (to - from) / steps;
+        let current = from;
+        const interval = setInterval(() => {
+            current += step;
+            if ((step > 0 && current >= to) || (step < 0 && current <= to)) {
+                audio.volume = Math.max(0, Math.min(1, to));
+                clearInterval(interval);
+            } else {
+                audio.volume = Math.max(0, Math.min(1, current));
+            }
+        }, duration / steps);
+    }
+
+    /* ============================================
+       PARALLAX HERO
+    ============================================ */
+    const heroBg = document.getElementById('heroBg');
+    window.addEventListener('scroll', () => {
+        const scrolled = window.scrollY;
+        if (heroBg) {
+            heroBg.style.transform = `translateY(${scrolled * 0.4}px)`;
+        }
+    }, { passive: true });
+
+    /* ============================================
+       THEATER MODAL
+    ============================================ */
+    const theater = document.getElementById('theaterModal');
+
+    function playMovie(src) {
+        const vid = document.getElementById('mainMovie');
+        theater.style.display = 'flex';
+        theater.classList.remove('revealed');
+
+        requestAnimationFrame(() => {
+            theater.style.opacity = '1';
+            setTimeout(() => theater.classList.add('revealed'), 100);
+        });
+
+        vid.src = src;
+        vid.play();
+        fadeAudio(bgAudio, bgAudio.volume, 0, 800);
+    }
+
+    function closeMovie() {
+        theater.style.opacity = '0';
+        theater.classList.remove('revealed');
+        setTimeout(() => {
+            theater.style.display = 'none';
+            document.getElementById('mainMovie').pause();
+        }, 600);
+        fadeAudio(bgAudio, 0, 0.28, 1000);
+    }
+
+    /* ============================================
+       MEMORIES DATA
+    ============================================ */
+    const memories = [
+        { src: 'tall (1).jpg',  text: 'Every journey was just an excuse to look at you.',    type: 'img' },
+        { src: 'tall (1).mp4',  text: "The things I'd do just to hear you laugh.",            type: 'vid' },
+        { src: 'tall (2).mp4',  text: 'Even in the silly moments, I couldn\'t look away.',   type: 'vid' },
+        { src: 'tall (4).jpg',  text: 'Nights that felt like they would last forever.',       type: 'img' },
+        { src: 'tall (4).mp4',  text: 'A beautiful blur of perfect timing.',                  type: 'vid' },
+        { src: 'tall (5).jpg',  text: 'Your fake protests never stood a chance.',             type: 'img' },
+        { src: 'tall (5).mp4',  text: 'Beautiful chaos, exactly the way I like it.',         type: 'vid' },
+        { src: 'tall (6).jpg',  text: 'Turning my entire world completely upside down.',      type: 'img' },
+        { src: 'tall (7).jpg',  text: 'In our own little universe.',                          type: 'img' },
+        { src: 'tall (11).jpg', text: 'Finding our own gravity.',                             type: 'img' },
+        { src: 'tall (12).jpg', text: 'A quiet kind of certainty.',                           type: 'img' },
+        { src: 'tall (13).jpg', text: 'Memorizing all your expressions.',                     type: 'img' },
+        { src: 'tall (14).jpg', text: 'If we were a story, this would be the cover.',        type: 'img' },
+        { src: 'tall (15).jpg', text: 'Just us against the world.',                          type: 'img' },
+        { src: 'tall (17).jpg', text: 'The comfort of simply being near you.',               type: 'img' },
+        { src: 'tall (18).jpg', text: 'No personal space. I wouldn\'t change a thing.',      type: 'img' },
+        { src: 'tall (19).jpg', text: 'You make everywhere feel like ours.',                 type: 'img' },
+        { src: 'tall (20).jpg', text: 'Some nights feel like they were written for us.',     type: 'img' },
+        { src: 'tall (21).jpg', text: 'A look that says everything.',                        type: 'img' },
+        { src: 'tall (22).jpg', text: 'Always finding a reason to smile.',                   type: 'img' },
+        { src: 'tall (23).jpg', text: 'Standing right where we belong.',                     type: 'img' },
+        { src: 'tall (24).jpg', text: 'City lights and late night walks.',                   type: 'img' },
+        { src: 'tall (25).jpg', text: 'You make the whole city disappear.',                  type: 'img' },
+        { src: 'tall (26).jpg', text: 'Starting another chapter, exactly like this.',        type: 'img' },
+        { src: 'tall (27).jpg', text: 'Never a dull moment.',                               type: 'img' },
+        { src: 'tall (28).jpg', text: 'Drawn exactly as I remember it.',                     type: 'img' },
+        { src: 'tall (30).jpg', text: 'The best way to start a year.',                      type: 'img' },
+        { src: 'tall (31).jpg', text: 'Soft moments in a loud world.',                      type: 'img' },
+        { src: 'tall (32).jpg', text: 'The best kind of crazy.',                            type: 'img' },
+        { src: 'tall (33).jpg', text: 'Only looking at you.',                              type: 'img' },
+        { src: 'tall (34).jpg', text: 'We couldn\'t be serious if we tried.',              type: 'img' },
+        { src: 'tall (35).jpg', text: 'Springtime, pink petals, and perfect peace.',       type: 'img' },
+        { src: 'tall (36).jpg', text: 'The way you look at me changes everything.',        type: 'img' },
+        { src: 'tall (37).jpg', text: 'The eyes. They never lie.',                         type: 'img' },
+        { src: 'tall (38).jpg', text: 'Collecting memories like Polaroids.',               type: 'img' },
+        { src: 'tall (39).jpg', text: 'A scrapbook of my favourite person.',               type: 'img' },
+        { src: 'tall (40).jpg', text: 'By your side is exactly where I belong.',           type: 'img' },
+        { src: 'tall (41).jpg', text: 'A quiet kind of beautiful.',                        type: 'img' },
+        { src: 'tall (42).jpg', text: 'Just thinking about you.',                         type: 'img' },
+        { src: 'tall (43).jpg', text: 'You take my breath away. Every single time.',      type: 'img' },
+        { src: 'tall (44).jpg', text: 'That smile is my favourite view.',                  type: 'img' },
+        { src: 'tall (45).jpg', text: 'Never a serious moment.',                          type: 'img' },
+        { src: 'tall (46).jpg', text: 'The simplest moments are always the best.',        type: 'img' },
+        { src: 'tall (47).jpg', text: 'Elegant, beautiful, and all mine.',                type: 'img' },
+        { src: 'tall (48).jpg', text: 'Closer is better.',                               type: 'img' },
+        { src: 'tall (49).jpg', text: 'This is where I find my peace.',                  type: 'img' },
+    ];
+
+    /* ============================================
+       SLIDESHOW
+    ============================================ */
+    const slideshowEl = document.getElementById('slideshowOverlay');
+    const aperture    = document.getElementById('aperture');
+    let currentIndex  = 0;
+    let slideTimeout  = null;
+
+    // Build progress dots (show only 8)
+    const progressEl = document.getElementById('slideProgress');
+    for (let i = 0; i < Math.min(memories.length, 9); i++) {
+        const d = document.createElement('div');
+        d.className = 'progress-dot';
+        if (i === 0) d.classList.add('active');
+        progressEl.appendChild(d);
+    }
+    const progressDots = progressEl.querySelectorAll('.progress-dot');
+
+    function openSlideshow() {
+        currentIndex = 0;
+        slideshowEl.classList.add('open');
+
+        // Aperture animation
+        requestAnimationFrame(() => {
+            aperture.classList.add('opening');
+            setTimeout(() => {
+                slideshowEl.classList.add('visible');
+                updateSlide();
+                setTimeout(() => aperture.classList.add('done'), 800);
+            }, 300);
+        });
+    }
+
+    function closeSlideshow() {
+        slideshowEl.classList.remove('visible');
+        setTimeout(() => {
+            slideshowEl.classList.remove('open');
+            aperture.classList.remove('opening', 'done');
+            clearTimeout(slideTimeout);
+        }, 1000);
+    }
+
+    function changeSlide(dir) {
+        currentIndex = (currentIndex + dir + memories.length) % memories.length;
+        const media = document.getElementById('slideMedia');
+        const text  = document.getElementById('slideText');
+
+        media.classList.add('slide-fade-out');
+        text.classList.add('slide-fade-out');
+
+        setTimeout(() => {
+            updateSlide();
+            media.classList.remove('slide-fade-out');
+            text.classList.remove('slide-fade-out');
+        }, 400);
+    }
+
+    function updateSlide() {
+        const m = memories[currentIndex];
+        const media = document.getElementById('slideMedia');
+        const text  = document.getElementById('slideText');
+
+        media.innerHTML = m.type === 'vid'
+            ? `<video src="${m.src}" autoplay loop playsinline></video>`
+            : `<img src="${m.src}" alt="">`;
+
+        text.textContent = m.text;
+
+        // Counter
+        const num = String(currentIndex + 1).padStart(2, '0');
+        const tot = String(memories.length).padStart(2, '0');
+        document.getElementById('slideCounter').textContent = `${num} / ${tot}`;
+
+        // Progress dots
+        progressDots.forEach((d, i) => {
+            const chunk = Math.floor(currentIndex / memories.length * 9);
+            d.classList.toggle('active', i === chunk);
+        });
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', e => {
+        if (!slideshowEl.classList.contains('open')) return;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+        if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   changeSlide(-1);
+        if (e.key === 'Escape') closeSlideshow();
+    });
+
+    /* ============================================
+       HIDDEN LETTER
+    ============================================ */
+    function toggleLetter() {
+        const body   = document.getElementById('letterBody');
+        const toggle = document.getElementById('letterToggle');
+        const isOpen = body.classList.contains('open');
+        body.classList.toggle('open');
+        toggle.textContent = isOpen ? '— A Letter For You —' : '— Close —';
+    }
+
+    /* ============================================
+       CREDITS REVEAL (Intersection Observer)
+    ============================================ */
+    const creditBlocks = document.querySelectorAll('.credit-block');
+    const creditObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const delay = parseInt(entry.target.dataset.delay) || 0;
+                setTimeout(() => entry.target.classList.add('visible'), delay);
+            }
+        });
+    }, { threshold: 0.3 });
+    creditBlocks.forEach(b => creditObserver.observe(b));
+
+    /* ============================================
+       SCROLL REVEAL
+    ============================================ */
+    const revealEls = document.querySelectorAll('.reveal');
+    const revealObs = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+            if (e.isIntersecting) e.target.classList.add('visible');
+        });
+    }, { threshold: 0.1 });
+    revealEls.forEach(el => revealObs.observe(el));
+
+    /* ============================================
+       COMING SOON COUNTER
+    ============================================ */
+    // Set your anniversary / start date here
+    const startDate = new Date('2023-02-14');
+
+    function updateCounter() {
+        const now  = new Date();
+        const diff = now - startDate;
+        const days  = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+        const mins  = Math.floor((diff % (1000*60*60)) / (1000*60));
+        document.getElementById('csDays').textContent  = days.toLocaleString();
+        document.getElementById('csHours').textContent = hours;
+        document.getElementById('csMins').textContent  = mins;
+    }
+    updateCounter();
+    setInterval(updateCounter, 60000);
+
+    /* ============================================
+       REFINED HEARTS — Outline SVG, sparse
+    ============================================ */
+    function createHeart() {
+        const heart = document.createElement('div');
+        heart.className = 'heart';
+        heart.innerHTML = `<svg viewBox="0 0 24 22" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 20.5C12 20.5 2 13.5 2 7a5 5 0 0 1 10 0 5 5 0 0 1 10 0c0 6.5-10 13.5-10 13.5z" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+        heart.style.left = (Math.random() * 95 + 2) + 'vw';
+        heart.style.animationDuration = (Math.random() * 6 + 10) + 's';
+        heart.style.animationDelay    = '0s';
+        heart.style.fontSize = (Math.random() * 6 + 8) + 'px';
+        document.body.appendChild(heart);
+        setTimeout(() => heart.remove(), 16000);
+    }
+
+    // Only create hearts occasionally — premium restraint
+    setInterval(createHeart, 6000);
+
+    /* ============================================
+       TOUCH SWIPE FOR SLIDESHOW
+    ============================================ */
+    let touchStartX = 0;
+    slideshowEl.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+    slideshowEl.addEventListener('touchend',   e => {
+        const delta = touchStartX - e.changedTouches[0].clientX;
+        if (Math.abs(delta) > 50) changeSlide(delta > 0 ? 1 : -1);
+    });
+    </script>
+</body>
+</html>

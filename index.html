@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Private Cinema</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+    <style>
+        /* ========================================
+           PRIVATE CINEMA — UPGRADED DESIGN SYSTEM
+           ======================================== */
+        :root {
+            --noir:        #080306;
+            --velvet:      #7a1525;
+            --rose:        #c97d8a;
+            --gold:        #b8962e;
+            --gold-glow:   rgba(184,150,46,0.18);
+            --ivory:       #f5efe6;
+            --ivory-dim:   rgba(245,239,230,0.45);
+            --ivory-ghost: rgba(245,239,230,0.08);
+            --duration:    0.7s;
+            --spring:      cubic-bezier(0.34,1.56,0.64,1);
+            --cinematic:   cubic-bezier(0.76,0,0.24,1);
+        }
+
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+        /* ─── CURSOR ─── */
+        body { cursor: none; }
+
+        #cursor-dot {
+            width: 7px; height: 7px;
+            background: var(--gold);
+            border-radius: 50%;
+            position: fixed;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 99999;
+            transform: translate(-50%,-50%);
+            transition: width 0.3s, height 0.3s, background 0.3s;
+        }
+
+        #cursor-ring {
+            width: 34px; height: 34px;
+            border: 1px solid rgba(184,150,46,0.35);
+            border-radius: 50%;
+            position: fixed;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 99998;
+            transform: translate(-50%,-50%);
+            transition: width 0.45s var(--spring),
+                        height 0.45s var(--spring),
+                        border-color 0.3s,
+                        background 0.3s;
+        }
+
+        body.hovering #cursor-dot {
+            width: 5px; height: 5px;
+            background: var(--rose);
+        }
+
+        body.hovering #cursor-ring {
+            width: 58px; height: 58px;
+            border-color: rgba(201,125,138,0.45);
+            background: rgba(201,125,138,0.05);
+        }
+
+        /* ─── BASE ─── */
+        body {
+            background: var(--noir);
+            color: var(--ivory);
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 300;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* ─── FILM GRAIN (CSS-only, no image) ─── */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 9000;
+            pointer-events: none;
+            opacity: 0.048;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            background-size: 190px;
+        }
+
+        /* ─── PARALLAX BG ─── */
+        .bg-canvas {
+            position: fixed;
+            inset: 0;
+            background:
+                linear-gradient(rgba(8,3,6,0.72), rgba(40,8,14,0.55)),
+                url('background.jpg') center/cover no-repeat;
+            filter: blur(5px) brightness(0.7);
+            transform: scale(1.12);
+            z-index: -3;
+            will-change: transform;
+            transition: transform 0.08s linear;
+        }
+
+        .ambient-red {
+            position: fixed;
+            bottom: -18%; left: 5%;
+            width: 65vw; height: 50vh;
+            background: var(--velvet);
+            filter: blur(130px);
+            opacity: 0.24;
+            z-index: -2;
+            will-change: transform;
+            pointer-events: none;
+        }
+
+        .ambient-gold {
+            position: fixed;
+            top: -12%; right: 8%;
+            width: 38vw; height: 40vh;
+            background: var(--gold);
+            filter: blur(160px);
+            opacity: 0.13;
+            z-index: -2;
+            will-change: transform;
+            pointer-events: none;
+        }
+
+        /* ─── OVERTURE OVERLAY ─── */
+        #overture {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 8000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3rem;
+        }
+
+        .overture-line {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-weight: 300;
+            font-size: clamp(1rem, 2.5vw, 1.35rem);
+            letter-spacing: 4px;
+            color: var(--ivory);
+            opacity: 0;
+            animation: fadeLine 1.6s ease forwards;
+        }
+
+        .overture-line:nth-child(2) { animation-delay: 1.8s; }
+
+        @keyframes fadeLine {
+            from { opacity: 0; filter: blur(8px); transform: translateY(8px); }
+            to   { opacity: 0.55; filter: blur(0); transform: translateY(0); }
+        }
+
+        #enter-btn {
+            background: transparent;
+            border: 1px solid rgba(245,239,230,0.18);
+            color: var(--ivory-dim);
+            padding: 1.1rem 3.2rem;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.68rem;
+            letter-spacing: 7px;
+            text-transform: uppercase;
+            border-radius: 50px;
+            cursor: none;
+            opacity: 0;
+            animation: fadeLine 1s ease 4s forwards;
+            transition: border-color 0.5s, color 0.5s, box-shadow 0.5s, transform 0.5s var(--spring);
+        }
+
+        #enter-btn:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: 0 0 28px var(--gold-glow);
+            transform: scale(1.05);
+        }
+
+        #overture.fade-out {
+            animation: overtureExit 1.4s var(--cinematic) forwards;
+        }
+
+        @keyframes overtureExit {
+            from { opacity: 1; }
+            to   { opacity: 0; pointer-events: none; }
+        }
+
+        /* ─── MAIN UI ─── */
+        #main-ui {
+            text-align: center;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #main-ui.reveal {
+            animation: dreamReveal 2.2s var(--spring) forwards;
+            pointer-events: all;
+        }
+
+        @keyframes dreamReveal {
+            from { opacity: 0; filter: blur(18px); transform: scale(0.94) translateY(10px); }
+            to   { opacity: 1; filter: blur(0); transform: scale(1) translateY(0); }
+        }
+
+        /* ─── ORNAMENT DIVIDER ─── */
+        .ornament {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            margin-bottom: 2.5rem;
+            opacity: 0.3;
+        }
+
+        .ornament-line {
+            flex: 1;
+            height: 0.5px;
+            background: var(--ivory);
+            max-width: 80px;
+        }
+
+        .ornament-glyph {
+            font-size: 0.65rem;
+            letter-spacing: 5px;
+            color: var(--ivory);
+        }
+
+        /* ─── TITLE ─── */
+        .main-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 300;
+            font-size: clamp(2.2rem, 5vw, 3.4rem);
+            letter-spacing: 10px;
+            text-transform: uppercase;
+            color: var(--ivory);
+            margin-bottom: 0.6rem;
+            line-height: 1.05;
+        }
+
+        .main-subtitle {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 0.95rem;
+            color: var(--rose);
+            letter-spacing: 3px;
+            margin-bottom: 3.5rem;
+        }
+
+        /* ─── PROFILES ─── */
+        .profile-list {
+            display: flex;
+            gap: 3rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 3.5rem;
+        }
+
+        .profile-item {
+            cursor: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.2rem;
+            transition: transform var(--duration) var(--spring);
+        }
+
+        .profile-item:hover { transform: translateY(-14px); }
+
+        .profile-frame {
+            width: 175px;
+            height: 175px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(245,239,230,0.08);
+            position: relative;
+            box-shadow: 0 18px 40px rgba(0,0,0,0.6);
+            transition: border-color var(--duration), box-shadow var(--duration) var(--spring);
+        }
+
+        .profile-frame img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: brightness(0.82) contrast(1.08) sepia(0.18);
+            transition: filter var(--duration), transform var(--duration) var(--spring);
+        }
+
+        /* Projector flicker on hover */
+        .profile-item:hover .profile-frame {
+            border-color: rgba(245,239,230,0.55);
+            box-shadow: 0 0 45px rgba(245,204,213,0.35);
+        }
+
+        .profile-item:hover .profile-frame img {
+            filter: brightness(1.08) saturate(1.15) sepia(0);
+            transform: scale(1.07);
+            animation: projFlicker 0.22s ease forwards;
+        }
+
+        @keyframes projFlicker {
+            0%   { filter: brightness(0.82) sepia(0.18); }
+            20%  { filter: brightness(1.35) sepia(0); }
+            40%  { filter: brightness(0.9)  sepia(0.05); }
+            65%  { filter: brightness(1.2)  sepia(0); }
+            100% { filter: brightness(1.08) saturate(1.15) sepia(0); }
+        }
+
+        /* US — heartbeat */
+        .us-profile .profile-frame {
+            border-color: rgba(122,21,37,0.55);
+            animation: heartbeat 4s infinite ease-in-out;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { box-shadow: 0 0 18px rgba(122,21,37,0.35); }
+            50% { box-shadow: 0 0 50px rgba(122,21,37,0.65); transform: scale(1.03); }
+        }
+
+        .profile-name {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.68rem;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: var(--ivory-dim);
+            transition: color var(--duration), letter-spacing var(--duration);
+        }
+
+        .profile-item:hover .profile-name { color: var(--ivory); letter-spacing: 7px; }
+        .us-profile .profile-name { color: var(--rose); }
+
+        /* ─── MANAGE BTN ─── */
+        .manage-btn {
+            background: transparent;
+            border: 1px solid rgba(163,141,141,0.3);
+            color: rgba(245,239,230,0.3);
+            padding: 0.75rem 2.5rem;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.65rem;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            border-radius: 50px;
+            cursor: none;
+            transition: border-color 0.5s, color 0.5s, background 0.5s;
+        }
+
+        .manage-btn:hover {
+            border-color: var(--velvet);
+            color: var(--ivory);
+            background: var(--velvet);
+        }
+
+        /* ─── HIDDEN LETTER (✦ corner icon) ─── */
+        #letter-trigger {
+            position: fixed;
+            bottom: 2rem; right: 2rem;
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: none;
+            z-index: 500;
+            opacity: 0;
+            animation: fadeLine 1s ease 5.5s forwards;
+            color: rgba(245,239,230,0.2);
+            font-size: 1.1rem;
+            transition: color 0.4s;
+        }
+
+        #letter-trigger:hover { color: var(--rose); }
+
+        /* ─── LETTER OVERLAY ─── */
+        #letter-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(8,3,6,0.96);
+            z-index: 7000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease;
+            padding: 2rem;
+        }
+
+        #letter-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .letter-card {
+            max-width: 520px;
+            width: 100%;
+            position: relative;
+            text-align: center;
+        }
+
+        .letter-seal {
+            width: 42px; height: 42px;
+            background: var(--velvet);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 2rem;
+            font-size: 1rem;
+            color: rgba(245,239,230,0.7);
+            box-shadow: 0 0 30px rgba(122,21,37,0.5);
+            animation: sealPulse 3s infinite ease-in-out;
+        }
+
+        @keyframes sealPulse {
+            0%,100% { box-shadow: 0 0 20px rgba(122,21,37,0.4); }
+            50% { box-shadow: 0 0 50px rgba(122,21,37,0.7); }
+        }
+
+        .letter-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-weight: 300;
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            line-height: 2;
+            color: rgba(245,239,230,0.7);
+            margin-bottom: 2.5rem;
+        }
+
+        .letter-sig {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 1rem;
+            color: var(--rose);
+            letter-spacing: 2px;
+        }
+
+        .letter-close {
+            margin-top: 2.5rem;
+            background: transparent;
+            border: 1px solid rgba(245,239,230,0.15);
+            color: rgba(245,239,230,0.35);
+            padding: 0.65rem 2rem;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.62rem;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            border-radius: 50px;
+            cursor: none;
+            transition: all 0.4s;
+        }
+
+        .letter-close:hover {
+            border-color: var(--rose);
+            color: var(--rose);
+        }
+
+        /* ─── PAGE TRANSITION OUT ─── */
+        #transition-out {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #transition-out.active {
+            animation: blackout 1.5s var(--cinematic) forwards;
+        }
+
+        @keyframes blackout {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Custom Cursor -->
+    <div id="cursor-dot"></div>
+    <div id="cursor-ring"></div>
+
+    <!-- Audio -->
+    <audio id="bg-audio" loop>
+        <source src="bg-music.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Parallax Background -->
+    <div class="bg-canvas" id="bg-canvas"></div>
+    <div class="ambient-red" id="amb-red"></div>
+    <div class="ambient-gold" id="amb-gold"></div>
+
+    <!-- OVERTURE — appears first, before Enter is clicked -->
+    <div id="overture">
+        <p class="overture-line">Before the lights go down…</p>
+        <p class="overture-line" style="font-size:0.7rem; letter-spacing:6px; font-family:'DM Sans',sans-serif; font-style:normal; text-transform:uppercase;">This was made for you.</p>
+        <button id="enter-btn" onclick="startExperience()">Enter Our Memories</button>
+    </div>
+
+    <!-- Film Page Transition -->
+    <div id="transition-out"></div>
+
+    <!-- MAIN UI -->
+    <div id="main-ui">
+        <div class="ornament">
+            <div class="ornament-line"></div>
+            <div class="ornament-glyph">✦ · ✦</div>
+            <div class="ornament-line"></div>
+        </div>
+
+        <h1 class="main-title">Who's Watching?</h1>
+        <p class="main-subtitle">A film about us — still running</p>
+
+        <div class="profile-list">
+            <div class="profile-item" onclick="startCinema('Her')">
+                <div class="profile-frame">
+                    <img src="her.jpg" alt="Her">
+                </div>
+                <span class="profile-name">Her</span>
+            </div>
+
+            <div class="profile-item us-profile" onclick="startCinema('Us')">
+                <div class="profile-frame">
+                    <img src="us.jpg" alt="Us">
+                </div>
+                <span class="profile-name">Us</span>
+            </div>
+
+            <div class="profile-item" onclick="startCinema('Me')">
+                <div class="profile-frame">
+                    <img src="me.jpg" alt="Me">
+                </div>
+                <span class="profile-name">Me</span>
+            </div>
+        </div>
+
+        <button class="manage-btn">Our Private Cinema</button>
+    </div>
+
+    <!-- Hidden Letter Trigger -->
+    <div id="letter-trigger" onclick="openLetter()" title="A note for you">✦</div>
+
+    <!-- Letter Overlay -->
+    <div id="letter-overlay">
+        <div class="letter-card">
+            <div class="letter-seal">✦</div>
+            <p class="letter-text">
+                "I built this because I ran out of ways to say it out loud.<br><br>
+                Every film we've watched together has been a love letter in disguise.<br><br>
+                This one finally has your name on it."
+            </p>
+            <p class="letter-sig">— Always yours</p>
+            <br>
+            <button class="letter-close" onclick="closeLetter()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        /* ── CURSOR ── */
+        const dot  = document.getElementById('cursor-dot');
+        const ring = document.getElementById('cursor-ring');
+        let ringX = 0, ringY = 0, dotX = 0, dotY = 0;
+
+        document.addEventListener('mousemove', e => {
+            dotX = e.clientX; dotY = e.clientY;
+            dot.style.left  = dotX + 'px';
+            dot.style.top   = dotY + 'px';
+
+            /* Parallax */
+            const mx = (e.clientX / window.innerWidth  - 0.5);
+            const my = (e.clientY / window.innerHeight - 0.5);
+            document.getElementById('bg-canvas').style.transform =
+                `scale(1.12) translate(${mx * -14}px, ${my * -14}px)`;
+            document.getElementById('amb-red').style.transform =
+                `translate(${mx * 28}px, ${my * 28}px)`;
+            document.getElementById('amb-gold').style.transform =
+                `translate(${mx * -42}px, ${my * -42}px)`;
+        });
+
+        /* Lagging ring follow */
+        function animateRing() {
+            ringX += (dotX - ringX) * 0.12;
+            ringY += (dotY - ringY) * 0.12;
+            ring.style.left = ringX + 'px';
+            ring.style.top  = ringY + 'px';
+            requestAnimationFrame(animateRing);
+        }
+        animateRing();
+
+        /* Hover class */
+        document.querySelectorAll('.profile-item, button, .manage-btn, #letter-trigger').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+        });
+
+        /* ── AUDIO ── */
+        const audio = document.getElementById('bg-audio');
+
+        /* ── ENTER ── */
+        function startExperience() {
+            const overture = document.getElementById('overture');
+            const ui       = document.getElementById('main-ui');
+
+            audio.volume = 0.0;
+            audio.play();
+            let vol = 0;
+            const ramp = setInterval(() => {
+                if (vol < 0.35) { vol += 0.01; audio.volume = vol; }
+                else clearInterval(ramp);
+            }, 80);
+
+            overture.classList.add('fade-out');
+            setTimeout(() => {
+                overture.style.display = 'none';
+                ui.classList.add('reveal');
+            }, 1400);
+        }
+
+        /* ── PROFILE SELECT ── */
+        function startCinema(user) {
+            const ui = document.getElementById('main-ui');
+            const tx = document.getElementById('transition-out');
+
+            /* Fade out music */
+            let fadeOut = setInterval(() => {
+                if (audio.volume > 0.02) audio.volume -= 0.02;
+                else { audio.pause(); clearInterval(fadeOut); }
+            }, 80);
+
+            /* Cinematic blackout then navigate */
+            tx.classList.add('active');
+            setTimeout(() => {
+                window.location.href = 'homepage.html';
+                console.log('Loading for: ' + user);
+            }, 1500);
+        }
+
+        /* ── HIDDEN LETTER ── */
+        function openLetter() {
+            document.getElementById('letter-overlay').classList.add('open');
+        }
+
+        function closeLetter() {
+            document.getElementById('letter-overlay').classList.remove('open');
+        }
+
+        /* Close letter on backdrop click */
+        document.getElementById('letter-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeLetter();
+        });
+    </script>
+</body>
+</html>
