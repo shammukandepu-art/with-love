@@ -619,7 +619,7 @@
             }, 1400);
         }
 
-        /* ── PROFILE SELECT ── */
+       /* ── PROFILE SELECT ── */
         function startCinema(user) {
             const ui = document.getElementById('main-ui');
             const tx = document.getElementById('transition-out');
@@ -633,8 +633,14 @@
             /* Cinematic blackout then navigate */
             tx.classList.add('active');
             setTimeout(() => {
-                window.location.href = 'homepage.html';
-                console.log('Loading for: ' + user);
+                // Route to the correct page based on the profile clicked!
+                if (user === 'Her') {
+                    window.location.href = 'her.html';
+                } else if (user === 'Us') {
+                    window.location.href = 'homepage.html';
+                } else if (user === 'Me') {
+                    window.location.href = 'me.html';
+                }
             }, 1500);
         }
 
